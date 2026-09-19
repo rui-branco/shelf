@@ -46,12 +46,19 @@ in your Downloads folder, newest last, right beside the Recycle Bin.
 
 ## Install
 
+Download `shelf.exe` from the [Releases](../../releases) page and run it, or build
+it yourself:
+
 ```powershell
 git clone https://github.com/rui-branco/shelf.git
 cd shelf
-.\build.ps1
-.\bin\shelf.exe
+.\install.ps1
 ```
+
+`install.ps1` builds, puts the executable in `%LOCALAPPDATA%\Shelf`, adds a Start
+Menu shortcut and starts it. Install it somewhere permanent like that rather than
+running it out of `bin`: both **Start with Windows** and the updater work against
+the running executable's own path, so a build output that later moves breaks them.
 
 Right-click the icon for **Start with Windows** to have it there on every login.
 
@@ -77,11 +84,29 @@ either.
 | Drag a file onto the panel | Move it into Downloads (Ctrl to copy) |
 | Drop a tile on the Recycle Bin | Send it to the bin |
 | Right-click a tile | Open, Show in folder, Copy, Delete |
-| Right-click the taskbar icon | Open Downloads, Start with Windows, Quit |
+| Right-click the taskbar icon | Open Downloads, Start with Windows, Check for updates, Quit |
 | <kbd>Esc</kbd> | Close the stack, or cancel a drag |
 
 Settings live in `%APPDATA%\Shelf\config.json`: which folder to watch, how many
 items to show, and the tile size.
+
+## Updates
+
+Right-click the icon and choose **Check for updates**. Shelf also looks once at
+startup, quietly: if a newer release is out, that item reads **Update to Shelf
+1.1.0** the next time you open the menu, and the version it is running is written
+at the foot of the menu either way.
+
+Updating downloads that release's `shelf.exe`, moves the running build aside,
+swaps the new one in and restarts. Windows will not let a running executable be
+overwritten, but it will let it be renamed, and the build that stepped aside is
+swept up on the next start.
+
+The repository is pinned in the source rather than read from config: an updater
+that can be pointed elsewhere by a settings file is a way to make Shelf run
+someone else's code. A release is only offered if it is not a draft or a
+prerelease and has a `shelf.exe` attached, and the download is rejected unless it
+really is a program.
 
 ## Known limits
 
