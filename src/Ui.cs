@@ -6,6 +6,124 @@ using System.Windows.Forms;
 
 namespace Shelf
 {
+    /// <summary>
+    /// Shared UI drawing helpers.
+    /// </summary>
+    public static class Ui
+    {
+        /// <summary>
+        /// Draws a macOS-style Downloads folder icon into the given box.
+        /// Vector GDI+ so it stays crisp at any size.
+        /// </summary>
+        public static void DrawDownloadsIcon(Graphics g, RectangleF box)
+        {
+            float w = box.Width;
+            float h = box.Height;
+            float x = box.X;
+            float y = box.Y;
+
+            // Colours
+            Color tabColor = ColorTranslator.FromHtml("#2E8BD6");
+            Color bodyTop = ColorTranslator.FromHtml("#7FC4F5");
+            Color bodyBottom = ColorTranslator.FromHtml("#3B9EE8");
+            Color panelTop = ColorTranslator.FromHtml("#A8D8F8");
+            Color panelBottom = ColorTranslator.FromHtml("#57AEEF");
+            Color arrowColor = ColorTranslator.FromHtml("#17405F");
+            Color shadowColor = Color.FromArgb(30, 0, 0, 0);
+            Color highlightColor = Color.FromArgb(90, 255, 255, 255);
+
+            // Derived metrics
+            float tabWidth = 0.42f * w;
+            float tabHeight = 0.20f * h;
+            float tabRadius = 0.06f * w;
+            float bodyRadius = 0.13f * w;
+            float panelRadius = 0.11f * w;
+            float panelInset = 0.04f * w;
+            float shadowOffset = 0.02f * h;
+
+            // Body rect (from y = 0.14*h to bottom)
+            RectangleF bodyRect = new RectangleF(x, y + 0.14f * h, w, h - 0.14f * h);
+
+            // 1. Shadow - body shape offset down
+            RectangleF shadowRect = new RectangleF(
+                bodyRect.X, bodyRect.Y + shadowOffset,
+                bodyRect.Width, bodyRect.Height);
+            using (GraphicsPath shadowPath = Theme.Rounded(shadowRect, bodyRadius))
+            using (SolidBrush shadowBrush = new SolidBrush(shadowColor))
+            {
+                g.FillPath(shadowBrush, shadowPath);
+            }
+
+            // 2. Folder tab - rounded rect behind the body, left-aligned at top
+            RectangleF tabRect = new RectangleF(x, y, tabWidth, tabHeight);
+            using (GraphicsPath tabPath = Theme.Rounded(tabRect, tabRadius))
+            using (SolidBrush tabBrush = new SolidBrush(tabColor))
+            {
+                g.FillPath(tabBrush, tabPath);
+            }
+
+            // 3. Folder body - rounded rect from y = 0.14*h to bottom
+            using (GraphicsPath bodyPath = Theme.Rounded(bodyRect, bodyRadius))
+            using (LinearGradientBrush bodyBrush = new LinearGradientBrush(
+                new PointF(bodyRect.X, bodyRect.Y),
+                new PointF(bodyRect.X, bodyRect.Bottom),
+                bodyTop, bodyBottom))
+            {
+                g.FillPath(bodyBrush, bodyPath);
+            }
+
+            // 4. Front panel - rounded rect inset on left/right, from y = 0.30*h to y = 0.97*h
+            RectangleF panelRect = new RectangleF(
+                x + panelInset, y + 0.30f * h,
+                w - panelInset * 2, 0.67f * h);
+            using (GraphicsPath panelPath = Theme.Rounded(panelRect, panelRadius))
+            using (LinearGradientBrush panelBrush = new LinearGradientBrush(
+                new PointF(panelRect.X, panelRect.Y),
+                new PointF(panelRect.X, panelRect.Bottom),
+                panelTop, panelBottom))
+            {
+                g.FillPath(panelBrush, panelPath);
+            }
+
+            // 5. Top highlight - 1px line along front panel's top edge
+            using (Pen highlightPen = new Pen(highlightColor, 1f))
+            {
+                float hlY = panelRect.Y;
+                float hlLeft = panelRect.X + panelRadius;
+                float hlRight = panelRect.Right - panelRadius;
+                g.DrawLine(highlightPen, hlLeft, hlY, hlRight, hlY);
+            }
+
+            // 6. Down arrow - centred on front panel
+            float cx = x + w / 2f;
+            float stemWidth = 0.10f * w;
+            float stemTop = y + 0.44f * h;
+            float stemBottom = y + 0.74f * h;
+            float chevronY = y + 0.62f * h;
+            float chevronTip = y + 0.78f * h;
+            float chevronSpread = 0.17f * w;
+
+            using (Pen arrowPen = new Pen(arrowColor, stemWidth))
+            {
+                arrowPen.StartCap = LineCap.Round;
+                arrowPen.EndCap = LineCap.Round;
+                arrowPen.LineJoin = LineJoin.Round;
+
+                // Vertical stem
+                g.DrawLine(arrowPen, cx, stemTop, cx, stemBottom);
+
+                // Chevron head
+                PointF[] chevron = new PointF[]
+                {
+                    new PointF(cx - chevronSpread, chevronY),
+                    new PointF(cx, chevronTip),
+                    new PointF(cx + chevronSpread, chevronY)
+                };
+                g.DrawLines(arrowPen, chevron);
+            }
+        }
+    }
+
     public static class Theme
     {
         public static readonly Color Back = ColorTranslator.FromHtml("#1C1D20");

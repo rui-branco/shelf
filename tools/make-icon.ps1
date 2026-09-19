@@ -26,6 +26,11 @@ function New-RoundedPath([float]$x, [float]$y, [float]$w, [float]$h, [float]$r) 
     return $p
 }
 
+# The same artwork the taskbar pill draws (see Ui.DrawDownloadsIcon in src).
+# Kept in step deliberately: the icon in Explorer, Alt-Tab and the exe itself
+# should be the thing already recognised on the taskbar, not a second mark
+# that exists only here. The proportions are the identical fractions of the
+# box, so this is a port rather than a lookalike.
 function Render-Icon([int]$S) {
     $bmp = New-Object System.Drawing.Bitmap($S, $S, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
     $g = [System.Drawing.Graphics]::FromImage($bmp)
@@ -33,68 +38,77 @@ function Render-Icon([int]$S) {
     $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
     $g.Clear([System.Drawing.Color]::Transparent)
 
-    $k = $S / 256.0   # design on a 256 grid, scale down
+    # A little margin so the folder is not flush with the icon edge.
+    $m = $S * 0.06
+    $x = $m; $y = $m
+    $w = $S - $m * 2; $h = $S - $m * 2
 
-    # --- rounded background ---
-    $inset  = 6 * $k
-    $radius = [Math]::Max(2.0, 54 * $k)
-    $path = New-RoundedPath $inset $inset ($S - $inset * 2) ($S - $inset * 2) $radius
-    $rect = New-Object System.Drawing.RectangleF(0, 0, $S, $S)
-    $brush = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
-        $rect, $BgTop, $BgBot, [System.Drawing.Drawing2D.LinearGradientMode]::ForwardDiagonal)
-    $g.FillPath($brush, $path)
+    $tabColor    = [System.Drawing.ColorTranslator]::FromHtml("#2E8BD6")
+    $bodyTop     = [System.Drawing.ColorTranslator]::FromHtml("#7FC4F5")
+    $bodyBottom  = [System.Drawing.ColorTranslator]::FromHtml("#3B9EE8")
+    $panelTop    = [System.Drawing.ColorTranslator]::FromHtml("#A8D8F8")
+    $panelBottom = [System.Drawing.ColorTranslator]::FromHtml("#57AEEF")
+    $arrowColor  = [System.Drawing.ColorTranslator]::FromHtml("#17405F")
+    $shadowColor = [System.Drawing.Color]::FromArgb(30, 0, 0, 0)
+    $hiColor     = [System.Drawing.Color]::FromArgb(90, 255, 255, 255)
 
-    if ($S -ge 32) {
-        $bw = [Math]::Max(1.0, 3 * $k)
-        $pen = New-Object System.Drawing.Pen($Border, $bw)
-        $g.DrawPath($pen, $path)
+    $tabWidth    = 0.42 * $w
+    $tabHeight   = 0.20 * $h
+    $tabRadius   = 0.06 * $w
+    $bodyRadius  = 0.13 * $w
+    $panelRadius = 0.11 * $w
+    $panelInset  = 0.04 * $w
+    $shadowOff   = 0.02 * $h
+
+    $bodyY = $y + 0.14 * $h
+    $bodyH = $h - 0.14 * $h
+
+    $p = New-RoundedPath $x ($bodyY + $shadowOff) $w $bodyH $bodyRadius
+    $b = New-Object System.Drawing.SolidBrush($shadowColor)
+    $g.FillPath($b, $p); $b.Dispose(); $p.Dispose()
+
+    $p = New-RoundedPath $x $y $tabWidth $tabHeight $tabRadius
+    $b = New-Object System.Drawing.SolidBrush($tabColor)
+    $g.FillPath($b, $p); $b.Dispose(); $p.Dispose()
+
+    $p = New-RoundedPath $x $bodyY $w $bodyH $bodyRadius
+    $b = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
+        (New-Object System.Drawing.PointF($x, $bodyY)),
+        (New-Object System.Drawing.PointF($x, ($bodyY + $bodyH))),
+        $bodyTop, $bodyBottom)
+    $g.FillPath($b, $p); $b.Dispose(); $p.Dispose()
+
+    $panelX = $x + $panelInset
+    $panelY = $y + 0.30 * $h
+    $panelW = $w - $panelInset * 2
+    $panelH = 0.67 * $h
+    $p = New-RoundedPath $panelX $panelY $panelW $panelH $panelRadius
+    $b = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
+        (New-Object System.Drawing.PointF($panelX, $panelY)),
+        (New-Object System.Drawing.PointF($panelX, ($panelY + $panelH))),
+        $panelTop, $panelBottom)
+    $g.FillPath($b, $p); $b.Dispose(); $p.Dispose()
+
+    if ($S -ge 24) {
+        $pen = New-Object System.Drawing.Pen($hiColor, [Math]::Max(1.0, $S / 256.0))
+        $g.DrawLine($pen, ($panelX + $panelRadius), $panelY, ($panelX + $panelW - $panelRadius), $panelY)
         $pen.Dispose()
     }
-    $brush.Dispose(); $path.Dispose()
 
-    # --- the tray/shelf mark ---
-    # A simplified inbox/tray shape: open-top box with accent fill
-    $w = if ($S -le 20) { [Math]::Max(2.0, 24 * $k) } else { 20 * $k }
-
-    # Draw a tray shape - trapezoid-ish box
-    $trayPath = New-Object System.Drawing.Drawing2D.GraphicsPath
-
-    # Coordinates for a tray shape (open top box)
-    $left   = 56 * $k
-    $right  = 200 * $k
-    $top    = 70 * $k
-    $mid    = 150 * $k
-    $bottom = 190 * $k
-    $indent = 24 * $k
-
-    # Draw: top-left, top-right, then down and in for the tray sides, bottom
-    $trayPath.AddLine($left, $mid, $left, $bottom)
-    $trayPath.AddLine($left, $bottom, $right, $bottom)
-    $trayPath.AddLine($right, $bottom, $right, $mid)
-    $trayPath.AddLine($right, $mid, $right - $indent, $mid)
-    $trayPath.AddLine($right - $indent, $mid, $right - $indent, $top + $indent)
-    $trayPath.AddLine($right - $indent, $top + $indent, $left + $indent, $top + $indent)
-    $trayPath.AddLine($left + $indent, $top + $indent, $left + $indent, $mid)
-    $trayPath.AddLine($left + $indent, $mid, $left, $mid)
-    $trayPath.CloseFigure()
-
-    $trayBrush = New-Object System.Drawing.SolidBrush($Accent)
-    $g.FillPath($trayBrush, $trayPath)
-    $trayBrush.Dispose()
-    $trayPath.Dispose()
-
-    # Draw a small stack indicator (two lines above the tray)
-    $lineY1 = 52 * $k
-    $lineY2 = 68 * $k
-    $lineLeft = 90 * $k
-    $lineRight = 166 * $k
-    $lineW = [Math]::Max(2.0, 8 * $k)
-
-    $linePen = New-Object System.Drawing.Pen($Card, $lineW)
-    $linePen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
-    $linePen.EndCap   = [System.Drawing.Drawing2D.LineCap]::Round
-    $g.DrawLine($linePen, $lineLeft, $lineY1, $lineRight, $lineY1)
-    $linePen.Dispose()
+    $cx = $x + $w / 2.0
+    $pen = New-Object System.Drawing.Pen($arrowColor, (0.10 * $w))
+    $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
+    $pen.EndCap   = [System.Drawing.Drawing2D.LineCap]::Round
+    $pen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
+    $g.DrawLine($pen, $cx, ($y + 0.44 * $h), $cx, ($y + 0.74 * $h))
+    $spread = 0.17 * $w
+    $pts = @(
+        (New-Object System.Drawing.PointF(($cx - $spread), ($y + 0.62 * $h))),
+        (New-Object System.Drawing.PointF($cx,             ($y + 0.78 * $h))),
+        (New-Object System.Drawing.PointF(($cx + $spread), ($y + 0.62 * $h)))
+    )
+    $g.DrawLines($pen, $pts)
+    $pen.Dispose()
 
     $g.Dispose()
     return $bmp
