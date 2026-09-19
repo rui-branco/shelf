@@ -13,10 +13,6 @@ namespace Shelf
         public int MaxItems { get; set; }
         /// <summary>Tile size in logical pixels at 100% DPI.</summary>
         public int TileSize { get; set; }
-        /// <summary>Saved X position of the dock pill, or -1 for default.</summary>
-        public int DockX { get; set; }
-        /// <summary>Saved Y position of the dock pill, or -1 for default.</summary>
-        public int DockY { get; set; }
         /// <summary>Whether to launch at Windows startup.</summary>
         public bool StartWithWindows { get; set; }
 
@@ -24,9 +20,7 @@ namespace Shelf
         {
             FolderPath = "";
             MaxItems = 12;
-            TileSize = 96;
-            DockX = -1;
-            DockY = -1;
+            TileSize = 70;
             StartWithWindows = false;
         }
 
@@ -59,8 +53,6 @@ namespace Shelf
                 cfg.FolderPath = Json.Str(root, "FolderPath") ?? "";
                 cfg.MaxItems = Json.Int(root, "MaxItems", 12);
                 cfg.TileSize = Json.Int(root, "TileSize", 96);
-                cfg.DockX = Json.Int(root, "DockX", -1);
-                cfg.DockY = Json.Int(root, "DockY", -1);
                 cfg.StartWithWindows = Json.Bool(root, "StartWithWindows", false);
 
                 // Sanity clamps
@@ -88,8 +80,6 @@ namespace Shelf
                 root["FolderPath"] = FolderPath;
                 root["MaxItems"] = MaxItems;
                 root["TileSize"] = TileSize;
-                root["DockX"] = DockX;
-                root["DockY"] = DockY;
                 root["StartWithWindows"] = StartWithWindows;
 
                 File.WriteAllText(FilePath, Json.Write(root), new UTF8Encoding(false));

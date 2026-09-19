@@ -8,7 +8,6 @@ namespace Shelf
     static class Program
     {
         static Mutex _mutex;
-        static NotifyIcon _tray;
         static DockForm _dock;
         static Downloads _downloads;
         static AppConfig _config;
@@ -67,13 +66,13 @@ namespace Shelf
             owner.ShowInTaskbar = false;
             owner.FormBorderStyle = FormBorderStyle.None;
             owner.Size = new System.Drawing.Size(0, 0);
+            owner.StartPosition = FormStartPosition.Manual;
+            owner.Location = new System.Drawing.Point(-32000, -32000);
             owner.Load += delegate { owner.Visible = false; };
 
             _downloads = new Downloads(folder, _config.MaxItems, owner);
 
             _dock = new DockForm(_config, _downloads);
-
-            SetupTray();
 
             owner.Show();
             _dock.Show();
@@ -81,26 +80,21 @@ namespace Shelf
             Application.Run();
 
             // Cleanup
-            _tray.Visible = false;
-            _tray.Dispose();
             _downloads.Dispose();
             _mutex.ReleaseMutex();
         }
 
-        static void SetupTray()
-        {
-            _tray = new NotifyIcon();
-            _tray.Text = "Shelf";
+        static ContextMenuStrip _trayMenu;   // the pill's right-click menu
 
-            // Use the app icon if available, otherwise a generic one
-            try
-            {
-                _tray.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
-            }
-            catch
-            {
-                _tray.Icon = System.Drawing.SystemIcons.Application;
-            }
+        /// <summary>
+        /// Builds the pill's right-click menu. There is no tray icon: the pill
+        /// is already a permanent, visible presence on the taskbar, and a
+        /// second icon in the notification area to quit the first one was one
+        /// icon too many. Everything the tray offered lives here instead.
+        /// </summary>
+        public static ContextMenuStrip BuildPillMenu()
+        {
+            if (_trayMenu != null) return _trayMenu;
 
             ContextMenuStrip menu = new ContextMenuStrip();
             menu.Renderer = new DarkMenuRenderer();
@@ -138,18 +132,8 @@ namespace Shelf
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(quit);
 
-            _tray.ContextMenuStrip = menu;
-            _tray.Visible = true;
-
-            _tray.DoubleClick += delegate
-            {
-                // Show/focus the dock
-                if (_dock != null && !_dock.IsDisposed)
-                {
-                    _dock.Show();
-                    _dock.BringToFront();
-                }
-            };
+            _trayMenu = menu;
+            return menu;
         }
 
         static void SetStartup(bool enable)
