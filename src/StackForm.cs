@@ -462,7 +462,7 @@ namespace Shelf
                 // Tint over the blurred snapshot. Heavier than it first was:
                 // at 105 a bright window behind the panel still showed through
                 // enough to fight the labels for attention.
-                using (SolidBrush tint = new SolidBrush(Color.FromArgb(175, Theme.Card)))
+                using (SolidBrush tint = new SolidBrush(Color.FromArgb(215, Theme.Card)))
                 {
                     g.FillRectangle(tint, 0, 0, w, h);
                 }
@@ -532,11 +532,18 @@ namespace Shelf
             int thumbSz = (int)Math.Round(ThumbSize * s);
             int thumbX = x + (ts - thumbSz) / 2;
 
-            // Share the leftover height out evenly instead of nailing the icon
-            // to a fixed top pad: one gap above the icon, one between icon and
-            // label, one below the label. Fixed padding left whatever did not
-            // divide neatly as dead space under the text.
-            int labelH = (int)Math.Round(LabelHeight * s);
+            // Share the leftover height out evenly: one gap above the icon, one
+            // between icon and label, one below the label.
+            //
+            // labelH is the height of the *text*, measured, not the nominal
+            // LabelHeight box. The box is taller than the glyphs and the text
+            // draws at its top, so budgeting for the box left that difference
+            // as dead space below the caption - which is exactly why the bottom
+            // gap looked bigger than the top one.
+            int labelH;
+            using (Font probe = Theme.Font(LabelPt * s, FontStyle.Regular))
+                labelH = (int)Math.Ceiling(probe.GetHeight(g));
+
             int slack = ts - thumbSz - labelH;
             int gap = slack / 3;
             if (gap < 0) gap = 0;
@@ -564,17 +571,15 @@ namespace Shelf
                 }
             }
 
-            // Label sits directly under the icon, not pinned to the bottom of
-            // the tile. Anchoring it to the tile left a dead band between a
-            // 40px icon and its own caption, and the name read as belonging to
-            // nothing in particular.
+            // Label sits directly under the icon, one gap below it, with the
+            // same gap again beneath the text and the tile edge.
             int labelY = thumbY + thumbSz + gap;
             int labelPad = (int)Math.Round(3 * s);
             RectangleF labelRect = new RectangleF(x + labelPad, labelY,
                                                   ts - labelPad * 2, labelH);
 
             using (Font f = Theme.Font(LabelPt * s, FontStyle.Regular))
-            using (SolidBrush labelBrush = new SolidBrush(Theme.Dim))
+            using (SolidBrush labelBrush = new SolidBrush(Theme.Text))
             using (StringFormat fmt = new StringFormat())
             {
                 fmt.Alignment = StringAlignment.Center;
