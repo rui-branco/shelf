@@ -23,8 +23,8 @@
 ---
 
 Windows 11 has no way to get at your downloads from the taskbar. The feature that
-came closest â€” taskbar toolbars, which could pin a folder you could expand and
-drag out of â€” was removed in Windows 11 and there is no setting that brings it
+came closest, taskbar toolbars, which could pin a folder you could expand and
+drag out of, was removed in Windows 11 and there is no setting that brings it
 back.
 
 Shelf puts it back. It sits in the taskbar as one more icon, at the end of your
@@ -37,7 +37,7 @@ in your Downloads folder, newest last, right beside the Recycle Bin.
   anywhere that accepts a file. The file's own icon follows the cursor.
 - **Drag files in.** Drop anything on the panel and it moves into Downloads,
   Ctrl to copy.
-- **Drop on the bin** to recycle â€” undoable, because it goes through the shell
+- **Drop on the bin** to recycle, undoably, because it goes through the shell
   rather than deleting outright.
 - **Folders too**, not just files, with their real Explorer icons.
 - **Live.** A watcher updates the grid the moment something downloads, and the
@@ -90,8 +90,8 @@ items to show, and the tile size.
   keeps itself positioned after your last app icon, so it moves as the cluster
   re-centres.
 - **It hides while the Start menu is open.** Parenting into the taskbar would
-  fix that, and does â€” but the taskbar's XAML layer then owns hit testing, and
-  the icon becomes visible and unclickable. Being clickable matters more.
+  fix that, and does, but the taskbar's XAML layer then owns hit testing and the
+  icon becomes visible and unclickable. Being clickable matters more.
 - **The panel's blur is a snapshot** taken as it opens, so it does not track
   content moving behind it. For a panel that lives a few seconds, that is not
   worth a live capture.
