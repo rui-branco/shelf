@@ -5,8 +5,12 @@
 <h1 align="center">Shelf</h1>
 
 <p align="center">
-  <strong>A Downloads stack for your desktop.</strong><br>
-  Drag files out of your Downloads folder without opening Explorer.
+  <strong>A macOS-style Downloads stack for the Windows 11 taskbar.</strong><br>
+  Click the folder, see what just landed, drag it wherever it belongs.
+</p>
+
+<p align="center">
+  <img src="docs/stack.png" alt="The Shelf stack open above the taskbar, showing recent downloads over a blurred backdrop" width="560">
 </p>
 
 <p align="center">
@@ -18,32 +22,38 @@
 
 ---
 
-Windows 11 removed taskbar toolbars. That quiet change killed the workflow where
-you pinned your Downloads folder to the taskbar and dragged files straight out
-of it into whatever app needed them. Shelf brings it back.
+Windows 11 has no way to get at your downloads from the taskbar. The feature that
+came closest — taskbar toolbars, which could pin a folder you could expand and
+drag out of — was removed in Windows 11 and there is no setting that brings it
+back.
 
-A small pill sits above your taskbar. Click it, and a grid of your recent
-downloads appears. Drag a file onto Teams, into a browser upload dialog, or
-anywhere else that accepts files. The whole point is that drag.
+Shelf puts it back. It sits in the taskbar as one more icon, at the end of your
+app cluster. Click it and a frosted panel rises above the bar with whatever is
+in your Downloads folder, newest last, right beside the Recycle Bin.
 
-## Features
+## What it does
 
-- **Drag-out** — grab a file and drop it wherever you need it
-- **Thumbnails** — see what each file is, not just its name
-- **Trash tile** — drop files onto it to send them to the Recycle Bin
-- **Context menu** — Open, Show in folder, Copy, Delete
-- **Badge** — the pill shows how many recent files are waiting
-- **Bounce** — a new download nudges the pill so you know it landed
-- **Movable** — drag the pill anywhere on screen; the position is saved
-- **Tray icon** — right-click for quick access to the folder or to quit
-- **Nothing heavy** — one small exe, no installer, no browser, no Electron
+- **Drag files out.** Onto the desktop, into Explorer, into a chat window,
+  anywhere that accepts a file. The file's own icon follows the cursor.
+- **Drag files in.** Drop anything on the panel and it moves into Downloads,
+  Ctrl to copy.
+- **Drop on the bin** to recycle — undoable, because it goes through the shell
+  rather than deleting outright.
+- **Folders too**, not just files, with their real Explorer icons.
+- **Live.** A watcher updates the grid the moment something downloads, and the
+  icon gives a small bounce.
+- **Gets out of the way** when anything goes fullscreen.
 
 ## Install
 
-Download `shelf.exe` from [Releases](../../releases), put it somewhere permanent,
-and run it. A pill appears near the bottom-right corner of your screen.
+```powershell
+git clone https://github.com/rui-branco/shelf.git
+cd shelf
+.\build.ps1
+.\bin\shelf.exe
+```
 
-To launch at startup, right-click the tray icon and check **Start with Windows**.
+Right-click the icon for **Start with Windows** to have it there on every login.
 
 ## Build
 
@@ -51,67 +61,41 @@ To launch at startup, right-click the tray icon and check **Start with Windows**
 .\build.ps1
 ```
 
-No SDK and no NuGet. It compiles with the C# compiler that ships in Windows
-(`C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe`) against .NET
-Framework 4.8, which is present on every Windows 10 and 11 install.
+No SDK, no NuGet, no project file. It compiles with the C# compiler that already
+ships inside Windows (`C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe`)
+and produces one ~80&nbsp;KB executable with no dependencies. `tools\make-icon.ps1`
+draws the icon from code, so there are no binary image files in the repository
+either.
 
-| Script | Purpose |
-|---|---|
-| `build.ps1` | Compiles `bin\shelf.exe` |
-| `tools\make-icon.ps1` | Generates `assets\shelf.ico` from code |
-
-## Usage
+## Using it
 
 | Action | Result |
-|---|---|
-| Click the pill | Opens the stack popup |
-| Drag a tile | Starts a file drag you can drop anywhere |
-| Drop on the trash tile | Sends the file to the Recycle Bin |
-| Right-click a tile | Context menu: Open, Show in folder, Copy, Delete |
-| Click a tile | Opens the file |
-| Click the trash tile | Opens the Recycle Bin |
-| Esc, or click away | Closes the popup |
-| Drag the pill | Moves it; the position is saved |
+| --- | --- |
+| Click the taskbar icon | Open and close the stack |
+| Click a tile | Open that file or folder |
+| Drag a tile out | Move or copy it anywhere |
+| Drag a file onto the panel | Move it into Downloads (Ctrl to copy) |
+| Drop a tile on the Recycle Bin | Send it to the bin |
+| Right-click a tile | Open, Show in folder, Copy, Delete |
+| Right-click the taskbar icon | Open Downloads, Start with Windows, Quit |
+| <kbd>Esc</kbd> | Close the stack, or cancel a drag |
 
-## Configuration
-
-Settings live in `%APPDATA%\Shelf\config.json`:
-
-```json
-{
-  "FolderPath": "",
-  "MaxItems": 12,
-  "TileSize": 96,
-  "DockX": -1,
-  "DockY": -1,
-  "StartWithWindows": false
-}
-```
-
-| Key | Meaning |
-|---|---|
-| `FolderPath` | Folder to watch. Empty means the system Downloads folder. |
-| `MaxItems` | How many files to show (1-100). |
-| `TileSize` | Tile size in logical pixels at 100% DPI (48-256). |
-| `DockX`, `DockY` | Saved pill position. -1 means default bottom-right. |
-| `StartWithWindows` | Whether the app launches at login. |
+Settings live in `%APPDATA%\Shelf\config.json`: which folder to watch, how many
+items to show, and the tile size.
 
 ## Known limits
 
-- **No AppBar reservation** — the pill floats above other windows but cannot
-  reserve screen edge space the way a real shell AppBar would. Maximised windows
-  can cover it.
+- **It cannot reserve space on the taskbar.** Only a shell extension can do
+  that, and Windows 11 dropped the interface. Shelf is a floating window that
+  keeps itself positioned after your last app icon, so it moves as the cluster
+  re-centres.
+- **It hides while the Start menu is open.** Parenting into the taskbar would
+  fix that, and does — but the taskbar's XAML layer then owns hit testing, and
+  the icon becomes visible and unclickable. Being clickable matters more.
+- **The panel's blur is a snapshot** taken as it opens, so it does not track
+  content moving behind it. For a panel that lives a few seconds, that is not
+  worth a live capture.
 
-- **Default drag image** — the drag cursor is the standard Windows file-drag
-  image, not a live thumbnail of the file being dragged.
+## Licence
 
-- **Single folder** — watches one folder. If you want a second stack for a
-  different folder, run a second copy with a different config.
-
-## Debugging
-
-Unhandled errors append to `%APPDATA%\Shelf\error.log`.
-
-## License
-
-MIT
+MIT. See [LICENSE](LICENSE).
