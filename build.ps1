@@ -18,6 +18,9 @@ if (-not (Test-Path $ico)) {
   & (Join-Path $root "tools\make-icon.ps1")
 }
 
+# UIA assemblies live in the WPF subfolder of the framework directory.
+$wpf = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\WPF"
+
 $args = @(
   "/nologo",
   "/target:winexe",
@@ -28,7 +31,10 @@ $args = @(
   "/reference:System.dll",
   "/reference:System.Core.dll",
   "/reference:System.Drawing.dll",
-  "/reference:System.Windows.Forms.dll"
+  "/reference:System.Windows.Forms.dll",
+  "/reference:$wpf\WindowsBase.dll",
+  "/reference:$wpf\UIAutomationClient.dll",
+  "/reference:$wpf\UIAutomationTypes.dll"
 ) + $files
 
 Write-Host "Compiling $($files.Count) files..."
