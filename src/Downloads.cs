@@ -75,6 +75,12 @@ namespace Shelf
             get { return _items; }
         }
 
+        /// <summary>The folder being watched.</summary>
+        public string Folder
+        {
+            get { return _folder; }
+        }
+
         /// <summary>
         /// Rescans the folder and updates the item list.
         /// </summary>
@@ -89,23 +95,26 @@ namespace Shelf
                 if (!Directory.Exists(_folder)) return;
 
                 DirectoryInfo dir = new DirectoryInfo(_folder);
-                FileInfo[] files = dir.GetFiles();
+
+                // Folders belong here as much as files do. A macOS stack lists
+                // whatever is in the folder, and a Downloads folder holding only
+                // extracted archives - which is exactly what this one held - would
+                // otherwise show an empty grid and look broken. They drag out as
+                // CF_HDROP and recycle the same way, so nothing downstream cares.
+                FileSystemInfo[] files = dir.GetFileSystemInfos();
 
                 // Sort by LastWriteTime descending
-                Array.Sort(files, delegate(FileInfo a, FileInfo b)
+                Array.Sort(files, delegate(FileSystemInfo a, FileSystemInfo b)
                 {
                     return b.LastWriteTime.CompareTo(a.LastWriteTime);
                 });
 
                 int count = 0;
-                foreach (FileInfo fi in files)
+                foreach (FileSystemInfo fi in files)
                 {
                     if (count >= _maxItems) break;
 
-                    // Skip directories (shouldn't be in GetFiles, but be safe)
-                    if ((fi.Attributes & FileAttributes.Directory) != 0) continue;
-
-                    // Skip hidden and system files
+                    // Skip hidden and system entries
                     if ((fi.Attributes & FileAttributes.Hidden) != 0) continue;
                     if ((fi.Attributes & FileAttributes.System) != 0) continue;
 

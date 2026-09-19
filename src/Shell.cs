@@ -264,6 +264,50 @@ namespace Shelf
             }
         }
 
+        const uint FO_MOVE = 0x0001;
+        const uint FO_COPY = 0x0002;
+        const ushort FOF_NOCONFIRMMKDIR = 0x0200;
+
+        /// <summary>
+        /// Moves or copies files into a destination folder using SHFileOperation.
+        /// This lets Windows handle name collisions with its own UI and provides
+        /// undo support via FOF_ALLOWUNDO. Returns true on success.
+        /// </summary>
+        public static bool MoveInto(string[] sources, string destFolder, bool copy)
+        {
+            if (sources == null || sources.Length == 0) return false;
+            if (string.IsNullOrEmpty(destFolder)) return false;
+
+            try
+            {
+                // Build double-null-terminated source list
+                System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                foreach (string src in sources)
+                {
+                    sb.Append(src);
+                    sb.Append('\0');
+                }
+                sb.Append('\0');
+
+                SHFILEOPSTRUCT op = new SHFILEOPSTRUCT();
+                op.wFunc = copy ? FO_COPY : FO_MOVE;
+                op.pFrom = sb.ToString();
+                // pTo must also be double-null-terminated
+                op.pTo = destFolder + "\0\0";
+                // FOF_ALLOWUNDO for undo, FOF_NOCONFIRMMKDIR to auto-create subdirs.
+                // Deliberately NOT passing FOF_NOCONFIRMATION so Windows shows its
+                // own collision/progress dialogs and provides a proper undo stack.
+                op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMMKDIR;
+
+                int result = SHFileOperation(ref op);
+                return result == 0 && !op.fAnyOperationsAborted;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         #endregion
     }
 }
