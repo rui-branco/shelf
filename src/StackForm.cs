@@ -901,10 +901,10 @@ namespace Shelf
         {
             _dragging = true;
 
-            // Get the panel out of the way: it sits directly over the area you
-            // are most likely to be dragging towards, and a drop target you
-            // cannot see is not a drop target.
-            Hide();
+            // Remembered before the first Hide: Bounds survives hiding, and
+            // this rectangle is what "the cursor is still on the panel" means
+            // for the rest of the drag.
+            Rectangle panelBounds = Bounds;
 
             // Build the data object with file drop list
             DataObject data = new DataObject();
@@ -917,7 +917,6 @@ namespace Shelf
             // IDropTargetHelper, so over anything that does not participate the
             // image never appeared at all.
             DragGhost ghost = null;
-            GiveFeedbackEventHandler feedback = null;
             try
             {
                 int dragSz = (int)Math.Round(48 * _scale);
@@ -928,34 +927,42 @@ namespace Shelf
                     {
                         ghost = new DragGhost(icon, 200);
                     }
-
-                    // GiveFeedback is the only event that fires continuously
-                    // through a modal drag, so it is where the ghost gets moved
-                    // and where the panel decides whether to get out of the way.
-                    DragGhost g = ghost;
-                    feedback = delegate(object s, GiveFeedbackEventArgs fe)
-                    {
-                        fe.UseDefaultCursors = true;
-                        Point pt = Cursor.Position;
-                        g.MoveTo(pt);
-
-                        // Back over the pill means "I changed my mind" - bring
-                        // the panel back so the file has somewhere to land.
-                        // Anywhere else, stay out of the way of the real target.
-                        bool overPill = _dock.GetScreenBounds().Contains(pt);
-                        if (overPill && !Visible) ShowDuringDrag();
-                        else if (!overPill && Visible) Hide();
-                    };
-                    GiveFeedback += feedback;
                 }
             }
             catch { }
+
+            // GiveFeedback is the only event that fires continuously through a
+            // modal drag, so it is where the ghost gets moved and where the
+            // panel decides whether to get out of the way. Hooked up whether or
+            // not a ghost was built: getting out of the way is not the ghost's
+            // job, and when the thumbnail failed there was nothing left to
+            // bring the panel back at all.
+            DragGhost g = ghost;
+            GiveFeedbackEventHandler feedback = delegate(object s, GiveFeedbackEventArgs fe)
+            {
+                fe.UseDefaultCursors = true;
+                Point pt = Cursor.Position;
+                if (g != null) g.MoveTo(pt);
+
+                // Still on the panel: keep it up. The Recycle Bin is one of its
+                // own tiles, so hiding on the first pixel of movement made the
+                // bin the one target you could never drag to. Back over the
+                // pill means "I changed my mind" - bring it back so the file
+                // has somewhere to land. Anywhere else, get out of the way: the
+                // panel sits directly over the area you are most likely to be
+                // dragging towards, and a drop target you cannot see is not a
+                // drop target.
+                bool overOwn = panelBounds.Contains(pt) || _dock.GetScreenBounds().Contains(pt);
+                if (overOwn && !Visible) ShowDuringDrag();
+                else if (!overOwn && Visible) Hide();
+            };
+            GiveFeedback += feedback;
 
             // DoDragDrop is modal, so the form stays responsive during the drag.
             // We suppress close-on-deactivate by checking _dragging in OnDeactivate.
             DragDropEffects result = DoDragDrop(data, DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link);
 
-            if (feedback != null) GiveFeedback -= feedback;
+            GiveFeedback -= feedback;
             if (ghost != null) ghost.Dispose();
 
             _dragging = false;
