@@ -8,6 +8,6 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription("Downloads stack for your desktop")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyCopyright("")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.0.1.0")]
+[assembly: AssemblyFileVersion("1.0.1.0")]
 [assembly: ComVisible(false)]
