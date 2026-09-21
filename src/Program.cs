@@ -27,7 +27,11 @@ namespace Shelf
             }
         }
 
-        static void LogError(Exception ex)
+        /// <summary>
+        /// The one error log, at %APPDATA%\Shelf\error.log. Reachable from the rest of the
+        /// app so that a click which quietly did nothing leaves a trace somewhere.
+        /// </summary>
+        public static void LogError(Exception ex)
         {
             try
             {

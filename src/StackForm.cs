@@ -797,10 +797,19 @@ namespace Shelf
                 }
                 else if (t.Path != null && TargetExists(t.Path))
                 {
-                    // Open the file
-                    try { Process.Start(t.Path); }
-                    catch { }
-                    Close();
+                    // Open the file. The panel closes only once something has actually
+                    // opened: closing regardless meant a file with no handler, or one the
+                    // shell refused, read as "the click dismissed the panel and did
+                    // nothing", with no message and nothing in the log to say otherwise.
+                    try
+                    {
+                        Process.Start(t.Path);
+                        Close();
+                    }
+                    catch (Exception ex)
+                    {
+                        Program.LogError(ex);
+                    }
                 }
             }
 
@@ -960,12 +969,30 @@ namespace Shelf
 
             // DoDragDrop is modal, so the form stays responsive during the drag.
             // We suppress close-on-deactivate by checking _dragging in OnDeactivate.
-            DragDropEffects result = DoDragDrop(data, DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link);
+            try
+            {
+                DoDragDrop(data, DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link);
+            }
+            catch (Exception ex)
+            {
+                // A drag that threw is not worth the panel. Logged rather than left to the
+                // top-level handler, which would close Shelf over a failed drop.
+                Program.LogError(ex);
+            }
+            finally
+            {
+                // Unwound in a finally, not on the line after the call. DoDragDrop is a
+                // modal COM call, and when it threw, none of this ran: the handler stayed
+                // attached, the ghost stayed on screen as a topmost icon over everything,
+                // and _dragging stayed true - which is the flag OnDeactivate checks before
+                // closing, so click-away stopped closing the panel for good. The panel was
+                // already hidden by then, so ToggleStack read it as closed and built a
+                // second one, leaving the first alive and invisible.
+                GiveFeedback -= feedback;
+                if (ghost != null) ghost.Dispose();
 
-            GiveFeedback -= feedback;
-            if (ghost != null) ghost.Dispose();
-
-            _dragging = false;
+                _dragging = false;
+            }
 
             // Escape cancels the drag - Windows does that itself and returns
             // DragDropEffects.None. Either way the panel is done: if it is
@@ -1197,7 +1224,16 @@ namespace Shelf
                 string path = _menu.Tag as string;
                 if (TargetExists(path))
                 {
-                    Shell.RecycleFile(path);
+                    // RecycleFile asks the shell for FOF_SILENT, so Windows shows nothing
+                    // either way and this bool is the only report there is. Dropped on the
+                    // floor, a locked or protected file meant the grid redrew with the tile
+                    // still sitting in it and no hint of why.
+                    if (!Shell.RecycleFile(path))
+                        MessageBox.Show(this,
+                            "Could not delete\r\n" + path
+                            + "\r\n\r\nIt may be open in another program, or protected.",
+                            "Shelf", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
                     _downloads.Refresh();
                     Relayout();
                     Render();
