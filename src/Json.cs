@@ -375,7 +375,16 @@ namespace Shelf
 
             if (v is double)
             {
-                sb.Append(((double)v).ToString(CultureInfo.InvariantCulture));
+                double d = (double)v;
+
+                // NaN and the infinities are not JSON numbers. Written straight out they
+                // produced a bare NaN token that this parser rejects, so the write looked
+                // fine and the whole settings file was unreadable on the next start - every
+                // setting lost, silently, because Config.Load falls back to defaults. A
+                // window coordinate is NaN before layout and a scale over a zero dimension
+                // is infinite, so null here costs the one value instead of the file.
+                if (double.IsNaN(d) || double.IsInfinity(d)) sb.Append("null");
+                else sb.Append(d.ToString(CultureInfo.InvariantCulture));
                 return;
             }
 
