@@ -9,7 +9,14 @@ namespace Shelf
     {
         /// <summary>Override for the folder to watch. Empty means the system Downloads folder.</summary>
         public string FolderPath { get; set; }
-        /// <summary>Maximum number of items to show in the stack.</summary>
+        /// <summary>
+        /// Ceiling on how many items the stack will hold. There is no UI for it,
+        /// so it is deliberately high: the grid decides for itself how many tiles
+        /// fit on the monitor, and this is only here to stop a folder with
+        /// thousands of files in it from being read into memory for nothing. It
+        /// used to default to 12, which quietly hid everything past the twelfth
+        /// newest file with nothing to say it had.
+        /// </summary>
         public int MaxItems { get; set; }
         /// <summary>Tile size in logical pixels at 100% DPI.</summary>
         public int TileSize { get; set; }
@@ -19,7 +26,7 @@ namespace Shelf
         public AppConfig()
         {
             FolderPath = "";
-            MaxItems = 12;
+            MaxItems = 100;
             TileSize = 70;
             StartWithWindows = false;
         }
@@ -51,7 +58,7 @@ namespace Shelf
                 AppConfig cfg = new AppConfig();
 
                 cfg.FolderPath = Json.Str(root, "FolderPath") ?? "";
-                cfg.MaxItems = Json.Int(root, "MaxItems", 12);
+                cfg.MaxItems = Json.Int(root, "MaxItems", 100);
                 cfg.TileSize = Json.Int(root, "TileSize", 96);
                 cfg.StartWithWindows = Json.Bool(root, "StartWithWindows", false);
 

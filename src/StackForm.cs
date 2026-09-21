@@ -157,6 +157,42 @@ namespace Shelf
             finally { Dpi.LeaveDpi(ctx); }
         }
 
+        /// <summary>
+        /// How many file tiles fit without the grid outgrowing the screen.
+        ///
+        /// The panel is a fixed-size popup sitting above the pill: it does not
+        /// scroll, and Relayout can only nudge it down to the top of the work
+        /// area, not shrink it. So the row count has to be decided here, before
+        /// the tiles exist, rather than discovered after the panel is too tall.
+        /// The folder tile and the Recycle Bin are always drawn, so they come
+        /// out of the budget first.
+        /// </summary>
+        int FitCount(int available)
+        {
+            if (available <= 0) return 0;
+
+            int pad = (int)Math.Round(TilePad * _scale);
+            Rectangle wa = Screen.FromHandle(_dock.Handle).WorkingArea;
+            int margin = (int)Math.Round(24 * _scale);
+
+            // The widest row this screen allows, matching the width rule below.
+            int cols = MaxColumns;
+            while (cols > 1 && cols * _tileSize + (cols + 1) * pad > wa.Width - margin)
+                cols--;
+
+            // What is left once the pill and the gap above it are accounted for.
+            int room = wa.Height - _dock.GetScreenBounds().Height
+                     - (int)Math.Round(PanelGapPx * _scale) - margin;
+
+            int rows = (room - pad) / (_tileSize + pad);
+            if (rows < 1) rows = 1;
+
+            int slots = cols * rows - 2;
+            if (slots < 1) slots = 1;
+
+            return available < slots ? available : slots;
+        }
+
         void BuildTiles()
         {
             _tiles = new List<TileInfo>();
@@ -177,7 +213,17 @@ namespace Shelf
             // before the Recycle Bin. Downloads.Items is newest-first because
             // that is what the pill wants; the grid wants the opposite end.
             List<DownloadItem> items = _downloads.Items;
-            for (int i = items.Count - 1; i >= 0; i--)
+
+            // Trimmed to what the monitor can actually hold. MaxItems is the
+            // user's ceiling, but the grid only ever checked its WIDTH against
+            // the work area - the height grew a row at a time with nothing
+            // stopping it and no way to scroll, so a full enough folder drew a
+            // panel taller than the screen with its oldest rows clipped off the
+            // top edge, unreachable. Newest are kept, since those are the ones
+            // a downloads stack is for.
+            int shown = FitCount(items.Count);
+
+            for (int i = shown - 1; i >= 0; i--)
             {
                 DownloadItem item = items[i];
                 TileInfo t = new TileInfo();
