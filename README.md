@@ -62,18 +62,6 @@ the running executable's own path, so a build output that later moves breaks the
 
 Right-click the icon for **Start with Windows** to have it there on every login.
 
-## Build
-
-```powershell
-.\build.ps1
-```
-
-No SDK, no NuGet, no project file. It compiles with the C# compiler that already
-ships inside Windows (`C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe`)
-and produces one ~80&nbsp;KB executable with no dependencies. `tools\make-icon.ps1`
-draws the icon from code, so there are no binary image files in the repository
-either.
-
 ## Using it
 
 | Action | Result |
