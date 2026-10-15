@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshot.png" alt="The Shelf stack open above the taskbar, showing recent downloads over a blurred backdrop" width="560">
+  <img src="docs/screenshot.png" alt="The Shelf panel open above the taskbar: a frosted grid of recent downloads with Open Downloads and Recycle Bin along the bottom" width="560">
 </p>
 
 <p align="center">
@@ -29,20 +29,58 @@ back.
 
 Shelf puts it back. It sits in the taskbar as one more icon, at the end of your
 app cluster. Click it and a frosted panel rises above the bar with whatever is
-in your Downloads folder, newest last, right beside the Recycle Bin.
+in your Downloads folder, newest first.
 
 ## What it does
 
+- **Quick Look.** Press <kbd>Space</kbd> to preview the selected file, the way
+  macOS does: photos, PDFs, Office documents, text and code, video. It works in
+  the panel and also in Explorer and on the desktop, and the arrow keys flip
+  through files with the preview following.
 - **Drag files out.** Onto the desktop, into Explorer, into a chat window,
   anywhere that accepts a file. The file's own icon follows the cursor.
-- **Drag files in.** Drop anything on the panel and it moves into Downloads,
-  Ctrl to copy.
+- **Select like Explorer.** Drag a box over empty space, or Ctrl- and
+  Shift-click, then drag, copy or delete the lot at once.
+- **Drag files in.** Drop anything on the panel, or straight on the taskbar
+  icon, and it moves into Downloads. Ctrl to copy.
 - **Drop on the bin** to recycle, undoably, because it goes through the shell
   rather than deleting outright.
-- **Folders too**, not just files, with their real Explorer icons.
-- **Live.** A watcher updates the grid the moment something downloads, and the
-  icon gives a small bounce.
-- **Gets out of the way** when anything goes fullscreen.
+- **Folders too**, not just files, with their real Explorer icons and photo
+  previews.
+- **Live.** A watcher updates the grid the moment something downloads, even
+  with the panel open; the icon bounces and shows a dot until you look.
+- **Newest first, honestly.** Sorted by when a file arrived, so an extracted
+  archive or a photo carrying an old date still lands at the top.
+- **Keyboard too.** Arrows, Enter, Delete, Ctrl+A, Ctrl+C, Shift to extend.
+- **Every screen.** With a taskbar on each monitor, each gets its own icon,
+  and the panel opens on the screen you clicked.
+- **Follows Windows.** Light or dark, your accent colour, and per-monitor
+  scaling.
+- **Gets out of the way** when something goes fullscreen on the taskbar's
+  screen, and when an auto-hiding taskbar tucks itself away.
+
+## A closer look
+
+<p align="center">
+  <img src="docs/quicklook.jpg" alt="Quick Look: a photo previewed in a floating window just above the panel, over the tile it came from" width="640">
+</p>
+<p align="center"><sub><b>Quick Look.</b> <kbd>Space</kbd> on a file zooms its preview out of the icon, right beside it, in the panel, in Explorer or on the desktop.</sub></p>
+
+<table align="center">
+  <tr>
+    <td><img src="docs/screenshot.png" alt="The panel in dark mode" width="400"></td>
+    <td><img src="docs/screenshot-light.png" alt="The panel in light mode" width="400"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>Dark</b></sub></td>
+    <td align="center"><sub><b>Light</b>, following Windows</sub></td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/menus.png" alt="The tile menu (Open, Open with, Quick Look, Show in folder, Copy, Copy as path, Delete, Properties) and the taskbar icon menu" width="440">
+</p>
+<p align="center"><sub>Right-click a tile, or the taskbar icon.</sub></p>
 
 ## Install
 
@@ -67,22 +105,31 @@ Right-click the icon for **Start with Windows** to have it there on every login.
 | Action | Result |
 | --- | --- |
 | Click the taskbar icon | Open and close the stack |
-| Click a tile | Open that file or folder |
-| Drag a tile out | Move or copy it anywhere |
-| Drag a file onto the panel | Move it into Downloads (Ctrl to copy) |
-| Drop a tile on the Recycle Bin | Send it to the bin |
-| Right-click a tile | Open, Show in folder, Copy, Delete |
+| Click a tile | Select it, as in Explorer (Quick Look follows if it is open) |
+| Double-click a tile | Open that file or folder |
+| <kbd>Ctrl</kbd>+click, <kbd>Shift</kbd>+click | Add one tile, or a range, to the selection |
+| Drag across empty space | Select every tile the box touches (<kbd>Ctrl</kbd> to add) |
+| Drag a tile out | Move or copy it, or the whole selection, anywhere |
+| Drag a file onto the panel or the taskbar icon | Move it into Downloads (<kbd>Ctrl</kbd> to copy) |
+| Drop tiles on **Recycle Bin** | Send them to the bin |
+| <kbd>Space</kbd> | Quick Look the selection, in the panel, Explorer or on the desktop |
+| Right-click a tile | Open, Open with, Quick Look, Show in folder, Copy, Copy as path, Delete, Properties |
 | Right-click the taskbar icon | Open Downloads, Start with Windows, Check for updates, Quit |
-| <kbd>Esc</kbd> | Close the stack, or cancel a drag |
+| Arrow keys, <kbd>Home</kbd>, <kbd>End</kbd> | Move the selection (<kbd>Shift</kbd> to extend) |
+| <kbd>Ctrl</kbd>+<kbd>A</kbd> | Select everything |
+| <kbd>Enter</kbd> / <kbd>Delete</kbd> / <kbd>Ctrl</kbd>+<kbd>C</kbd> | Open, recycle or copy the selection |
+| <kbd>Alt</kbd>+<kbd>Enter</kbd> | Properties, one combined sheet for several files |
+| Mouse wheel | Scroll, when there are more files than fit |
+| <kbd>Esc</kbd> | Close Quick Look, then the stack, or cancel a drag |
 
-Settings live in `%APPDATA%\Shelf\config.json`: which folder to watch, how many
-items to show, and the tile size.
+Settings live in `%APPDATA%\Shelf\config.json`: which folder to watch and how
+many items to keep (the grid scrolls through them).
 
 ## Updates
 
 Right-click the icon and choose **Check for updates**. Shelf also looks once at
 startup, quietly: if a newer release is out, that item reads **Update to Shelf
-1.1.0** the next time you open the menu, and the version it is running is written
+1.2.0** the next time you open the menu, and the version it is running is written
 at the foot of the menu either way.
 
 Updating downloads that release's `shelf.exe`, moves the running build aside,
@@ -108,6 +155,10 @@ really is a program.
 - **The panel's blur is a snapshot** taken as it opens, so it does not track
   content moving behind it. For a panel that lives a few seconds, that is not
   worth a live capture.
+- **Quick Look takes Space from Explorer's file list.** Only there, and only
+  with no modifier held: renaming, the address bar and search keep Space.
+  Explorer's own use of plain Space in the list (selecting the focused item) is
+  the price.
 
 ## Licence
 
