@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -11,15 +11,13 @@ namespace Shelf
         public string FolderPath { get; set; }
         /// <summary>
         /// Ceiling on how many items the stack will hold. There is no UI for it,
-        /// so it is deliberately high: the grid decides for itself how many tiles
-        /// fit on the monitor, and this is only here to stop a folder with
+        /// so it is deliberately high: the grid scrolls through however many
+        /// there are, and this is only here to stop a folder with
         /// thousands of files in it from being read into memory for nothing. It
         /// used to default to 12, which quietly hid everything past the twelfth
         /// newest file with nothing to say it had.
         /// </summary>
         public int MaxItems { get; set; }
-        /// <summary>Tile size in logical pixels at 100% DPI.</summary>
-        public int TileSize { get; set; }
         /// <summary>Whether to launch at Windows startup.</summary>
         public bool StartWithWindows { get; set; }
 
@@ -27,7 +25,6 @@ namespace Shelf
         {
             FolderPath = "";
             MaxItems = 100;
-            TileSize = 70;
             StartWithWindows = false;
         }
 
@@ -59,14 +56,11 @@ namespace Shelf
 
                 cfg.FolderPath = Json.Str(root, "FolderPath") ?? "";
                 cfg.MaxItems = Json.Int(root, "MaxItems", 100);
-                cfg.TileSize = Json.Int(root, "TileSize", 96);
                 cfg.StartWithWindows = Json.Bool(root, "StartWithWindows", false);
 
                 // Sanity clamps
                 if (cfg.MaxItems < 1) cfg.MaxItems = 1;
-                if (cfg.MaxItems > 100) cfg.MaxItems = 100;
-                if (cfg.TileSize < 48) cfg.TileSize = 48;
-                if (cfg.TileSize > 256) cfg.TileSize = 256;
+                if (cfg.MaxItems > 500) cfg.MaxItems = 500;
 
                 return cfg;
             }
@@ -86,7 +80,6 @@ namespace Shelf
                 Dictionary<string, object> root = new Dictionary<string, object>();
                 root["FolderPath"] = FolderPath;
                 root["MaxItems"] = MaxItems;
-                root["TileSize"] = TileSize;
                 root["StartWithWindows"] = StartWithWindows;
 
                 File.WriteAllText(FilePath, Json.Write(root), new UTF8Encoding(false));

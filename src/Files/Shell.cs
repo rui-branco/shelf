@@ -9,7 +9,7 @@ namespace Shelf
     /// <summary>
     /// Shell interop: Downloads folder path, file thumbnails, and Recycle Bin.
     /// </summary>
-    public static class Shell
+    public static partial class Shell
     {
         #region Downloads folder
 
@@ -114,15 +114,29 @@ namespace Shelf
         /// </summary>
         public static Bitmap GetThumbnail(string path, int size)
         {
+            return GetImage(path, size, 0);     // SIIGBF_RESIZETOFIT
+        }
+
+        /// <summary>
+        /// The file's type icon, never a thumbnail. Instant: it comes from the
+        /// system image list instead of decoding the file, which for a photo
+        /// is the difference between a few milliseconds and fifty.
+        /// </summary>
+        public static Bitmap GetIcon(string path, int size)
+        {
+            return GetImage(path, size, 0x4);   // SIIGBF_ICONONLY
+        }
+
+        static Bitmap GetImage(string path, int size, int flags)
+        {
             IntPtr hbmp = IntPtr.Zero;
+            IShellItemImageFactory factory = null;
             try
             {
-                IShellItemImageFactory factory;
                 SHCreateItemFromParsingName(path, IntPtr.Zero,
                     typeof(IShellItemImageFactory).GUID, out factory);
 
-                // SIIGBF_RESIZETOFIT = 0
-                int hr = factory.GetImage(new SIZE(size, size), 0, out hbmp);
+                int hr = factory.GetImage(new SIZE(size, size), flags, out hbmp);
                 if (hr == 0 && hbmp != IntPtr.Zero)
                 {
                     Bitmap result = BitmapFromHbitmapWithAlpha(hbmp);
@@ -133,6 +147,12 @@ namespace Shelf
             finally
             {
                 if (hbmp != IntPtr.Zero) DeleteObject(hbmp);
+
+                // Released here rather than left to the finalizer. The wrapper
+                // is tiny but the shell item behind it, and the thumbnail
+                // handler it loaded, are not - and with almost no managed
+                // allocation going on, a finalizer can be a long time coming.
+                if (factory != null) Marshal.ReleaseComObject(factory);
             }
 
             // Fallback to file icon
@@ -220,6 +240,12 @@ namespace Shelf
 
         #endregion
 
+        /// <summary>Shows Windows' "How do you want to open this file?" picker.</summary>
+        public static void OpenWith(string path)
+        {
+            System.Diagnostics.Process.Start("rundll32.exe", "shell32.dll,OpenAs_RunDLL " + path);
+        }
+
         #region Recycle Bin
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -248,12 +274,22 @@ namespace Shelf
         /// </summary>
         public static bool RecycleFile(string path)
         {
+            return RecycleFiles(new string[] { path });
+        }
+
+        /// <summary>
+        /// Sends several files to the Recycle Bin in one shell operation, so
+        /// Ctrl+Z in Explorer brings them all back at once. True on success.
+        /// </summary>
+        public static bool RecycleFiles(string[] paths)
+        {
+            if (paths == null || paths.Length == 0) return false;
             try
             {
                 SHFILEOPSTRUCT op = new SHFILEOPSTRUCT();
                 op.wFunc = FO_DELETE;
-                // pFrom must be double-null-terminated
-                op.pFrom = path + "\0\0";
+                // pFrom is a list: each path null-terminated, and one more null to end it.
+                op.pFrom = string.Join("\0", paths) + "\0\0";
                 op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT;
                 int result = SHFileOperation(ref op);
                 return result == 0 && !op.fAnyOperationsAborted;

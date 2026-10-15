@@ -26,6 +26,7 @@ namespace Shelf
         const int WS_EX_TRANSPARENT = 0x20;
         const int WS_EX_NOACTIVATE = 0x08000000;
         const int WS_EX_TOOLWINDOW = 0x80;
+        const int WS_EX_TOPMOST = 0x8;
 
         class GhostForm : Form
         {
@@ -34,8 +35,10 @@ namespace Shelf
                 get
                 {
                     CreateParams cp = base.CreateParams;
+                    // Topmost as a style, not the TopMost property, which
+                    // applies it with a SetWindowPos that activates.
                     cp.ExStyle |= WS_EX_LAYERED | WS_EX_TRANSPARENT
-                                | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW;
+                                | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
                     return cp;
                 }
             }
@@ -46,7 +49,6 @@ namespace Shelf
             {
                 FormBorderStyle = FormBorderStyle.None;
                 ShowInTaskbar = false;
-                TopMost = true;
                 StartPosition = FormStartPosition.Manual;
                 AutoScaleMode = AutoScaleMode.None;
             }
