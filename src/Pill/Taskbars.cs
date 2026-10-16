@@ -28,8 +28,17 @@ namespace Shelf
         /// <summary>
         /// The safety net for relayouts nothing told us about (a pin, a settings
         /// change). Slow on purpose: everything common arrives as a request.
+        /// A pass over two taskbars costs about 13 ms of our CPU and more
+        /// inside explorer, so this is worth keeping rare.
         /// </summary>
-        const int IdleRefreshMs = 8000;
+        const int IdleRefreshMs = 20000;
+
+        /// <summary>
+        /// After a taskbar button appears or goes, the bar animates the change,
+        /// so a few follow-up passes catch where it ends up.
+        /// </summary>
+        const int SettleMs = 1000;
+        const int SettleStepMs = 250;
 
         static readonly object _lock = new object();
         static readonly List<Taskbar> _bars = new List<Taskbar>();
@@ -38,6 +47,7 @@ namespace Shelf
         static readonly AutoResetEvent _wake = new AutoResetEvent(false);
         static readonly ManualResetEvent _first = new ManualResetEvent(false);
         static volatile bool _reset;
+        static long _settleUntil;      // DateTime.UtcNow ticks; follow-up passes until then
 
         /// <summary>
         /// Raised on the worker thread, with the Taskbar as sender, when a
@@ -74,6 +84,18 @@ namespace Shelf
         /// <summary>Asks for a fresh measurement soon. Cheap; bursts coalesce.</summary>
         public static void Request()
         {
+            _wake.Set();
+        }
+
+        /// <summary>
+        /// A measurement now and a few more over the next second, while the
+        /// taskbar animates a button in or out. Every pill hears the same shell
+        /// notification and asks; they share this one schedule instead of each
+        /// running its own.
+        /// </summary>
+        public static void Settle()
+        {
+            Interlocked.Exchange(ref _settleUntil, DateTime.UtcNow.AddMilliseconds(SettleMs).Ticks);
             _wake.Set();
         }
 
@@ -149,7 +171,8 @@ namespace Shelf
         {
             while (true)
             {
-                bool asked = _wake.WaitOne(IdleRefreshMs);
+                bool settling = DateTime.UtcNow.Ticks < Interlocked.Read(ref _settleUntil);
+                bool asked = _wake.WaitOne(settling ? SettleStepMs : IdleRefreshMs) || settling;
 
                 List<Taskbar> bars;
                 lock (_lock) bars = new List<Taskbar>(_bars);

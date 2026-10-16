@@ -87,8 +87,12 @@ namespace Shelf
                 UpdateVisibility();
                 if (!Visible) return;
 
+                // No measurement here. A window coming to the front does not
+                // move the taskbar's buttons; windows appearing and going do,
+                // and the shell hook reports exactly those. Measuring on every
+                // switch cost both taskbars a walk each time you clicked
+                // between windows.
                 StartTopmostBurst();
-                Taskbars.Request();
             }
             catch { }
         }

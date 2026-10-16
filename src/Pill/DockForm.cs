@@ -100,11 +100,6 @@ namespace Shelf
         // second. Every check in it is a handful of cheap Win32 calls.
         Timer _tick;
 
-        // A few follow-up measurements after a taskbar button appears or goes:
-        // the bar animates the change, so the first measurement is too early.
-        Timer _settle;
-        int _settleLeft;
-
         // Topmost burst: reasserts topmost repeatedly for a short window after
         // shell events. A single reassertion loses to the Start menu animation.
         Timer _topmostBurst;
@@ -152,14 +147,6 @@ namespace Shelf
             _tick = new Timer();
             _tick.Interval = 250;
             _tick.Tick += delegate { OnTick(); };
-
-            _settle = new Timer();
-            _settle.Interval = 250;
-            _settle.Tick += delegate
-            {
-                Taskbars.Request();
-                if (--_settleLeft <= 0) _settle.Stop();
-            };
 
             _topmostBurst = new Timer();
             _topmostBurst.Interval = BurstIntervalMs;
@@ -343,10 +330,7 @@ namespace Shelf
         /// <summary>A few measurements over the next second, for an animating taskbar.</summary>
         void Settle()
         {
-            Taskbars.Request();
-            _settleLeft = 4;
-            _settle.Stop();
-            _settle.Start();
+            Taskbars.Settle();
         }
 
         void OnTick()
@@ -443,7 +427,7 @@ namespace Shelf
                 try { DeregisterShellHookWindow(Handle); }
                 catch { }
             }
-            foreach (Timer t in new Timer[] { _anim, _tick, _settle, _topmostBurst })
+            foreach (Timer t in new Timer[] { _anim, _tick, _topmostBurst })
             {
                 if (t != null) { t.Stop(); t.Dispose(); }
             }
